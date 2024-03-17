@@ -9,8 +9,8 @@
 // motor driver 
 #define R_EN 31 //zelena
 #define L_EN 30 //narandzasta
-#define LPWM 36 //crna
-#define RPWM 37 //siva
+#define LPWM 8 //crna
+#define RPWM 9 //siva
  
 // Create iBus Object
 IBusBM ibus;
@@ -77,11 +77,13 @@ void setup() {
 
   // Attach iBus object to serial port
   ibus.begin(Serial1);
+
+  analogWrite(RPWM, 0);
+  analogWrite(LPWM, 0);
 }
  
 void loop() {
-  analogWrite(RPWM, 0);
-  analogWrite(LPWM, 0);
+
   digitalWrite(R_EN, HIGH);
   digitalWrite(L_EN, HIGH);
 
@@ -110,13 +112,13 @@ void loop() {
   if(leftSpeed > 0) {
     analogWrite(LPWM, 0);
     analogWrite(RPWM, abs(leftSpeed));
-    Serial.print("ide pravo");
-    Serial.print(leftSpeed);
+    Serial.print("ide pravo ");
+    Serial.print(abs(leftSpeed));
     Serial.println();
   }else if(leftSpeed < 0) {
     analogWrite(RPWM, 0);
     analogWrite(LPWM, abs(leftSpeed));
-    Serial.print("ide nazad");
+    Serial.print("ide nazad ");
     Serial.print(abs(leftSpeed));
     Serial.println();
   }else {
@@ -125,6 +127,20 @@ void loop() {
     Serial.print("stoji");
     Serial.println();
   }
- 
-  delay(1000);
+ delay(10);
+
+  // analogWrite(LPWM, 0);
+  // analogWrite(RPWM, 30);
+  // delay(1000);
+  // analogWrite(LPWM, 0);
+  // analogWrite(RPWM, 150);
+  // delay(2000);
+  // analogWrite(LPWM, 0);
+  // analogWrite(RPWM, 0);
+  // delay(1000);
+
+  // analogWrite(LPWM, 50);
+  // analogWrite(RPWM, 0);
+  // delay(1000);
+
 }
