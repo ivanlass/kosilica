@@ -7,14 +7,97 @@
 #define RIGHT_JOYSTICK_UP_DOWN_CHANNEL 1
 
 // motor driver 
-#define R_EN 31 //zelena
-#define L_EN 30 //narandzasta
-#define LPWM 8 //crna
-#define RPWM 9 //siva
+#define left_motor_R_EN 31 //zelena
+#define left_motor_L_EN 30 //narandzasta
+#define left_motor_LPWM 8 //crna
+#define left_motor_RPWM 9 //siva
+#define THRESHOLD 5
  
 // Create iBus Object
 IBusBM ibus;
+
+int leftMotorSpeed = 0;
+int rightMotorSpeed = 0;
+
+
+int right_joystick_left_right_value = 0;
+int right_joystick_up_down_value = 0;
+
+
+void setup() {
+  // Start serial monitor
+  Serial.begin(9600);
  
+  pinMode(left_motor_R_EN, OUTPUT);
+  pinMode(left_motor_L_EN, OUTPUT);
+  pinMode(left_motor_RPWM, OUTPUT);
+  pinMode(left_motor_LPWM, OUTPUT);
+
+  // Attach iBus object to serial port
+  ibus.begin(Serial1);
+
+  // ensure left motor stoped
+  analogWrite(left_motor_RPWM, 0);
+  analogWrite(left_motor_LPWM, 0);
+}
+ 
+void loop() {
+  digitalWrite(left_motor_R_EN, HIGH);
+  digitalWrite(left_motor_L_EN, HIGH);
+
+  right_joystick_up_down_value = readChannel(RIGHT_JOYSTICK_UP_DOWN_CHANNEL, -255, 255, 0);
+  right_joystick_left_right_value = readChannel(RIGHT_JOYSTICK_LEFT_RIGHT_CHANNEL, -255, 255, 0);
+
+  if(abs(right_joystick_left_right_value) <= THRESHOLD) {
+    right_joystick_left_right_value = 0;
+  }
+
+  if(abs(right_joystick_up_down_value) <= THRESHOLD) {
+    right_joystick_up_down_value = 0;
+  }
+
+  motorsPowerCalc(right_joystick_left_right_value, right_joystick_up_down_value);
+
+  debugPrintValues();
+
+  setMotorSpeed(leftMotorSpeed, left_motor_LPWM, left_motor_RPWM);
+
+  delay(10);
+}
+
+
+void setMotorSpeed(int speed, int LPWM, int RPWM) {
+  if(speed > 0) {
+    analogWrite(LPWM, 0);
+    analogWrite(RPWM, abs(speed));
+  } else if(speed < 0) {
+    analogWrite(RPWM, 0);
+    analogWrite(LPWM, abs(speed));
+  } else {
+    analogWrite(RPWM, 0);
+    analogWrite(LPWM, 0);
+  }
+}
+
+
+void motorsPowerCalc(int leftRight, int upDown) {
+  // Adjust speeds for turning
+  if(upDown > 0) {
+    leftMotorSpeed = upDown + (leftRight);
+    rightMotorSpeed = upDown - (leftRight);
+  }else if(upDown < 0) {
+    leftMotorSpeed = upDown - (leftRight);
+    rightMotorSpeed = upDown + (leftRight);
+  }else {
+    leftMotorSpeed = 0;
+    rightMotorSpeed = 0;
+  }
+
+  // Ensure motor speeds are within range (-255 to 255)
+  leftMotorSpeed = constrain(leftMotorSpeed, -255, 255);
+  rightMotorSpeed = constrain(rightMotorSpeed, -255, 255);
+}
+
 // Read the number of a given channel and convert to the range provided.
 // If the channel is off, return the default value
 int readChannel(byte channelInput, int minLimit, int maxLimit, int defaultValue) {
@@ -33,114 +116,12 @@ bool readSwitch(byte channelInput, bool defaultValue) {
   return (ch > 50);
 }
 
-int leftSpeed = 0;
-int rightSpeed = 0;
-
-void motorPowerCalc(int leftRight, int upDown) {
-
- // Calculate base speed based on up/down joystick
-  int baseSpeed = upDown;
-
-  // Calculate adjustment for turning
-  int turnAdjustment = leftRight;
-
-  // Adjust speeds for turning
-  if(baseSpeed > 0) {
-    leftSpeed = baseSpeed + (turnAdjustment);
-    rightSpeed = baseSpeed - (turnAdjustment);
-  }else if(baseSpeed < 0) {
-    leftSpeed = baseSpeed - (turnAdjustment);
-    rightSpeed = baseSpeed + (turnAdjustment);
-  }else {
-    leftSpeed = 0;
-    rightSpeed = 0;
-  }
-
-  // Ensure motor speeds are within range (-100 to 100)
-  leftSpeed = constrain(leftSpeed, -255, 255);
-  rightSpeed = constrain(rightSpeed, -255, 255);
-}
-
-int right_joystick_left_right_value = 0;
-int right_joystick_up_down_value = 0;
-
-
- 
-void setup() {
-  // Start serial monitor
-  Serial.begin(9600);
- 
-  pinMode(R_EN, OUTPUT);
-  pinMode(L_EN, OUTPUT);
-  pinMode(RPWM, OUTPUT);
-  pinMode(LPWM, OUTPUT);
-
-  // Attach iBus object to serial port
-  ibus.begin(Serial1);
-
-  analogWrite(RPWM, 0);
-  analogWrite(LPWM, 0);
-}
- 
-void loop() {
-
-  digitalWrite(R_EN, HIGH);
-  digitalWrite(L_EN, HIGH);
-
- 
-  right_joystick_up_down_value = readChannel(RIGHT_JOYSTICK_UP_DOWN_CHANNEL, -255, 255, 0);
-  right_joystick_left_right_value = readChannel(RIGHT_JOYSTICK_LEFT_RIGHT_CHANNEL, -255, 255, 0);
-
-  if(right_joystick_left_right_value >= -5 && right_joystick_left_right_value <= 5) {
-    right_joystick_left_right_value = 0;
-  }
-
-  if(right_joystick_up_down_value >= -5 && right_joystick_up_down_value <= 5) {
-    right_joystick_up_down_value = 0;
-  }
-
-  motorPowerCalc(right_joystick_left_right_value, right_joystick_up_down_value);
- 
+void debugPrintValues() {
   Serial.print("left motor speed ");
-  Serial.print(leftSpeed);
+  Serial.print(leftMotorSpeed);
   Serial.print(" | ");
   Serial.print("right motor speed ");
-  Serial.print(rightSpeed);
+  Serial.print(rightMotorSpeed);
   Serial.print(" | ");
   Serial.println();
-
-  if(leftSpeed > 0) {
-    analogWrite(LPWM, 0);
-    analogWrite(RPWM, abs(leftSpeed));
-    Serial.print("ide pravo ");
-    Serial.print(abs(leftSpeed));
-    Serial.println();
-  }else if(leftSpeed < 0) {
-    analogWrite(RPWM, 0);
-    analogWrite(LPWM, abs(leftSpeed));
-    Serial.print("ide nazad ");
-    Serial.print(abs(leftSpeed));
-    Serial.println();
-  }else {
-    analogWrite(RPWM, 0);
-    analogWrite(LPWM, 0);
-    Serial.print("stoji");
-    Serial.println();
-  }
- delay(10);
-
-  // analogWrite(LPWM, 0);
-  // analogWrite(RPWM, 30);
-  // delay(1000);
-  // analogWrite(LPWM, 0);
-  // analogWrite(RPWM, 150);
-  // delay(2000);
-  // analogWrite(LPWM, 0);
-  // analogWrite(RPWM, 0);
-  // delay(1000);
-
-  // analogWrite(LPWM, 50);
-  // analogWrite(RPWM, 0);
-  // delay(1000);
-
 }
