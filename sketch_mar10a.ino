@@ -6,11 +6,18 @@
 #define RIGHT_JOYSTICK_LEFT_RIGHT_CHANNEL 0
 #define RIGHT_JOYSTICK_UP_DOWN_CHANNEL 1
 
-// motor driver 
-#define left_motor_R_EN 31 //zelena
-#define left_motor_L_EN 30 //narandzasta
+// right driver 
+#define right_motor_L_EN 2 // zuta l_en
+#define right_motor_R_EN  3 // bijela r_en
+#define right_motor_RPWM 4 // ljubicasta rpwm
+#define right_motor_LPWM 5 // narandzasta lpwm
+
+// left motor
 #define left_motor_LPWM 8 //crna
 #define left_motor_RPWM 9 //siva
+#define left_motor_L_EN 10 //narandzasta
+#define left_motor_R_EN 11 //zelena
+
 #define THRESHOLD 5
  
 // Create iBus Object
@@ -33,17 +40,26 @@ void setup() {
   pinMode(left_motor_RPWM, OUTPUT);
   pinMode(left_motor_LPWM, OUTPUT);
 
+  pinMode(right_motor_R_EN, OUTPUT);
+  pinMode(right_motor_L_EN, OUTPUT);
+  pinMode(right_motor_RPWM, OUTPUT);
+  pinMode(right_motor_LPWM, OUTPUT);
+
   // Attach iBus object to serial port
   ibus.begin(Serial1);
 
-  // ensure left motor stoped
+  // ensure left and right motor stopped
   analogWrite(left_motor_RPWM, 0);
   analogWrite(left_motor_LPWM, 0);
+  analogWrite(right_motor_RPWM, 0);
+  analogWrite(right_motor_LPWM, 0);
 }
  
 void loop() {
   digitalWrite(left_motor_R_EN, HIGH);
   digitalWrite(left_motor_L_EN, HIGH);
+  digitalWrite(right_motor_R_EN, HIGH);
+  digitalWrite(right_motor_L_EN, HIGH);
 
   right_joystick_up_down_value = readChannel(RIGHT_JOYSTICK_UP_DOWN_CHANNEL, -255, 255, 0);
   right_joystick_left_right_value = readChannel(RIGHT_JOYSTICK_LEFT_RIGHT_CHANNEL, -255, 255, 0);
@@ -61,8 +77,7 @@ void loop() {
   debugPrintValues();
 
   setMotorSpeed(leftMotorSpeed, left_motor_LPWM, left_motor_RPWM);
-
-  delay(10);
+  setMotorSpeed(rightMotorSpeed, right_motor_LPWM, right_motor_RPWM);
 }
 
 
